@@ -28,53 +28,26 @@
 .c2d-window-controls {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 8px;
+  gap: 2px;
+  padding: 2px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.035);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.18);
   flex-shrink: 0;
 }
 
-.c2d-window-dot {
-  width: 13px;
-  height: 13px;
-  border-radius: 50%;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.22);
-}
-
-.c2d-window-dot:hover {
-  filter: brightness(1.16);
-  transform: scale(1.08);
-}
-
-.c2d-window-dot-exit {
-  background: #ff5f57;
-}
-
-.c2d-window-dot-min {
-  background: #ffbd2e;
-}
-
-.c2d-window-dot-max {
-  background: #28c840;
-}
-
 .c2d-window-btn {
-  min-width: 30px;
-  height: 28px;
+  min-width: 36px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 9px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #aeb7c5;
-  font-size: 11px;
+  padding: 0 8px;
+  border-radius: 4px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #c2cad7;
+  font-size: 13px;
   font-family: var(--font-mono);
   cursor: pointer;
 }
@@ -85,9 +58,9 @@
 }
 
 .c2d-window-btn-danger {
-  color: #ffd6d6;
-  background: rgba(217, 75, 75, 0.18);
-  border-color: rgba(217, 75, 75, 0.34);
+  color: #f5f7fb;
+  background: transparent;
+  border-color: transparent;
 }
 
 .c2d-window-btn-danger:hover {
@@ -408,12 +381,82 @@
   flex-direction: column;
   background: rgba(23, 26, 33, 0.96);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 14px;
+  border-radius: 8px;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.44);
   overflow: hidden;
   min-width: 320px;
   min-height: 48px;
   transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.canvas-card-native {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  min-width: 96px;
+  min-height: 72px;
+  overflow: visible;
+}
+
+.canvas-card-native.canvas-card-active {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.canvas-card-native .canvas-card-header {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: 6px;
+  z-index: 2;
+  height: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  background: rgba(12, 14, 18, 0.76);
+  backdrop-filter: blur(10px);
+  opacity: 0;
+}
+
+.canvas-card-native:hover .canvas-card-header,
+.canvas-card-native.canvas-card-active .canvas-card-header {
+  opacity: 1;
+}
+
+.canvas-card-native .canvas-card-body {
+  border-radius: 6px;
+  background: transparent;
+  overflow: hidden;
+}
+
+.canvas-card-native.canvas-card-active .canvas-card-body {
+  outline: 1.5px solid #9b8cff;
+  outline-offset: 4px;
+}
+
+.canvas-native-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: transparent;
+  user-select: none;
+  pointer-events: none;
+}
+
+.canvas-card-native .canvas-card-resize {
+  width: 10px;
+  height: 10px;
+  right: -5px;
+  bottom: -5px;
+  border: 2px solid #9b8cff;
+  border-radius: 2px;
+  background: #101216;
+  opacity: 0;
+}
+
+.canvas-card-native.canvas-card-active .canvas-card-resize,
+.canvas-card-native:hover .canvas-card-resize {
+  opacity: 1;
 }
 
 .canvas-card-active {

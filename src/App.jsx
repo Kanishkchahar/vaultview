@@ -158,7 +158,7 @@ export default function App() {
         )}
         <main className="viewer-area">
           {tabs.length === 0 ? (
-            <EmptyState onOpenFile={handleOpenFile} />
+            <EmptyState onOpenFile={handleOpenFile} onNewCanvas={() => setCanvasMode(true)} />
           ) : (
             tabs.map(tab => (
               <div
@@ -189,7 +189,7 @@ export default function App() {
   );
 }
 
-function EmptyState({ onOpenFile }) {
+function EmptyState({ onOpenFile, onNewCanvas }) {
   return (
     <div className="empty-state">
       <div className="empty-icon">
@@ -200,7 +200,10 @@ function EmptyState({ onOpenFile }) {
       </div>
       <h2>No file open</h2>
       <p>Open a file to start viewing, or drag & drop onto this window.</p>
-      <button className="btn-primary" onClick={onOpenFile}>Open File</button>
+      <div className="empty-actions">
+        <button className="empty-plus-btn" onClick={onNewCanvas} title="New blank canvas" aria-label="New blank canvas">+</button>
+        <button className="btn-primary" onClick={onOpenFile}>Open File</button>
+      </div>
       <div className="empty-formats">
         {['PDF','DOCX','PPTX','XLSX','MP4','MP3','ZIP','EPUB','IMG','JSON'].map(f => (
           <span key={f} className="format-badge">{f}</span>

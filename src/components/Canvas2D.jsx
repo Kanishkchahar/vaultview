@@ -7,6 +7,7 @@ let elementIdCounter = 0;
 
 const CARD_DEFAULT_W = 680;
 const CARD_DEFAULT_H = 520;
+const IMAGE_DEFAULT_W = 360;
 const STORAGE_KEY = 'vaultview-canvas-scene';
 const MIN_SHAPE_SIZE = 8;
 
@@ -48,6 +49,10 @@ function getViewerKey(ext) {
   if (e === 'epub') return 'epub';
   if (['html','htm'].includes(e)) return 'html';
   return 'unknown';
+}
+
+function isImageExt(ext) {
+  return ['jpg','jpeg','png','gif','webp','svg'].includes((ext || '').toLowerCase());
 }
 
 function makeElement(type, x, y, style) {
@@ -128,7 +133,6 @@ function getCanvasCursorMode(e, board, viewport, tool, elements, selectedIds) {
 
   const hit = [...elements].reverse().find(el => pointInElement(point, el));
   if (!hit) return 'grab';
-  if (hit.type === 'text') return 'text';
   return 'move';
 }
 
@@ -292,11 +296,14 @@ export default function Canvas2D({ onClose }) {
     const id = ++cardIdCounter;
     const vp = vpRef.current;
     const brd = boardRef.current?.getBoundingClientRect() || { width: 1200, height: 800 };
-    const worldX = x ?? (brd.width / 2 - vp.x) / vp.scale - CARD_DEFAULT_W / 2;
-    const worldY = y ?? (brd.height / 2 - vp.y) / vp.scale - CARD_DEFAULT_H / 2;
+    const isImage = isImageExt(ext);
+    const defaultW = isImage ? IMAGE_DEFAULT_W : CARD_DEFAULT_W;
+    const defaultH = isImage ? 260 : CARD_DEFAULT_H;
+    const worldX = x ?? (brd.width / 2 - vp.x) / vp.scale - defaultW / 2;
+    const worldY = y ?? (brd.height / 2 - vp.y) / vp.scale - defaultH / 2;
     const newCard = {
       id, filePath, name, ext, viewerKey: getViewerKey(ext),
-      x: worldX, y: worldY, w: CARD_DEFAULT_W, h: CARD_DEFAULT_H, minimized: false,
+      x: worldX, y: worldY, w: defaultW, h: defaultH, minimized: false, native: isImage,
     };
     setCards(prev => [...prev, newCard]);
     setActiveCard(id);
@@ -415,7 +422,10 @@ export default function Canvas2D({ onClose }) {
     const selected = elementsRef.current.find(el => selectedRef.current.includes(el.id));
     const handle = selected ? getResizeHandle(world, selected) : null;
     const hit = [...elementsRef.current].reverse().find(el => pointInElement(world, el));
-    const useHand = tool === 'hand' || e.button === 1 || isSpaceRef.current || (tool === 'select' && !handle && !hit && !e.shiftKey);
+    const clickedCanvasChrome = e.target.closest?.('.canvas2d-empty, .canvas-card, .c2d-text-editor');
+    if (clickedCanvasChrome) return;
+
+    const useHand = tool === 'hand' || e.button === 1 || isSpaceRef.current;
 
     if (useHand) {
       e.preventDefault();
@@ -525,9 +535,9 @@ export default function Canvas2D({ onClose }) {
         return { ...el, w: world.x - action.start.x, h: world.y - action.start.y };
       }));
     }
-  }, []);
+  }, [tool]);
 
-  const handleBoardMouseUp = useCallback(() => {
+  const handleBoardMouseUp = useCallback((e) => {
     const action = actionRef.current;
     if (action?.type === 'move') {
       setHistory(h => ({ past: [...h.past, action.before].slice(-80), future: [] }));
@@ -543,11 +553,17 @@ export default function Canvas2D({ onClose }) {
     }
     setIsPanning(false);
     actionRef.current = null;
-    if (tool === 'select' || tool === 'hand') setCursorMode('grab');
-  }, [commitElements]);
+    const board = boardRef.current;
+    if (board && e) {
+      setCursorMode(getCanvasCursorMode(e, board, vpRef.current, tool, elementsRef.current, selectedRef.current));
+    } else if (tool === 'select' || tool === 'hand') {
+      setCursorMode('grab');
+    }
+  }, [commitElements, tool]);
 
   const handleDrop = useCallback((e) => {
     e.preventDefault();
+    e.stopPropagation();
     const rect = boardRef.current?.getBoundingClientRect();
     if (!rect) return;
     const vp = vpRef.current;
@@ -600,11 +616,10 @@ export default function Canvas2D({ onClose }) {
     <div className="canvas2d-root">
       <div className="canvas2d-toolbar">
         <div className="c2d-window-controls">
-          <button className="c2d-window-dot c2d-window-dot-exit" onClick={onClose} title="Exit canvas"/>
-          <button className="c2d-window-dot c2d-window-dot-min" onClick={minimizeWindow} title="Minimize"/>
-          <button className="c2d-window-dot c2d-window-dot-max" onClick={toggleMaximize} title="Maximize"/>
-          <button className="c2d-window-btn" onClick={toggleFullscreen} title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}>{isFullscreen ? '⤢' : '⛶'}</button>
-          <button className="c2d-window-btn c2d-window-btn-danger" onClick={closeApp} title="Close app">Close</button>
+          <button className="c2d-window-btn" onClick={minimizeWindow} title="Minimize" aria-label="Minimize">-</button>
+          <button className="c2d-window-btn" onClick={toggleMaximize} title="Maximize" aria-label="Maximize">□</button>
+          <button className="c2d-window-btn" onClick={toggleFullscreen} title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'} aria-label={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}>{isFullscreen ? '⤢' : '⛶'}</button>
+          <button className="c2d-window-btn c2d-window-btn-danger" onClick={closeApp} title="Close app" aria-label="Close app">×</button>
         </div>
         <button className="c2d-btn c2d-btn-primary" onClick={newBlankCanvas} title="New blank canvas">New</button>
         <div className="c2d-divider"/>
@@ -641,7 +656,8 @@ export default function Canvas2D({ onClose }) {
         onMouseMove={handleBoardMouseMove}
         onMouseUp={handleBoardMouseUp}
         onMouseLeave={handleBoardMouseUp}
-        onDragOver={e => e.preventDefault()}
+        onDragEnter={e => { e.preventDefault(); e.stopPropagation(); }}
+        onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
         onDrop={handleDrop}
       >
         <Grid viewport={viewport} />
@@ -819,9 +835,11 @@ function SelectionBox({ bounds }) {
 }
 
 function CanvasCard({ card, isActive, onMouseDown, onDragHeader, onClose, onMinimize, onResize }) {
+  const isNativeImage = card.native && isImageExt(card.ext);
+
   return (
     <div
-      className={`canvas-card ${isActive ? 'canvas-card-active' : ''} ${card.minimized ? 'canvas-card-minimized' : ''}`}
+      className={`canvas-card ${isNativeImage ? 'canvas-card-native' : ''} ${isActive ? 'canvas-card-active' : ''} ${card.minimized ? 'canvas-card-minimized' : ''}`}
       style={{ left: card.x, top: card.y, width: card.w, height: card.minimized ? 'auto' : card.h }}
       onMouseDown={(e) => { e.stopPropagation(); onMouseDown(e); }}
     >
@@ -833,10 +851,32 @@ function CanvasCard({ card, isActive, onMouseDown, onDragHeader, onClose, onMini
           <button className="canvas-card-btn canvas-card-btn-close" onClick={(e) => { e.stopPropagation(); onClose(); }} title="Close">x</button>
         </div>
       </div>
-      {!card.minimized && <div className="canvas-card-body"><ViewerRouter tab={card} /></div>}
+      {!card.minimized && (
+        <div className="canvas-card-body">
+          {isNativeImage ? <NativeCanvasImage card={card} /> : <ViewerRouter tab={card} />}
+        </div>
+      )}
       {!card.minimized && <div className="canvas-card-resize" onMouseDown={onResize}/>}
     </div>
   );
+}
+
+function NativeCanvasImage({ card }) {
+  const [src, setSrc] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      const nextSrc = window.electronAPI?.getFilePathUri
+        ? await window.electronAPI.getFilePathUri(card.filePath)
+        : card.filePath;
+      if (!cancelled) setSrc(nextSrc);
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [card.filePath]);
+
+  return src ? <img className="canvas-native-image" src={src} alt={card.name} draggable={false} /> : null;
 }
 
 function startCardDrag(e, id, cards, setCards, setActiveCard, dragCard, vpRef) {
