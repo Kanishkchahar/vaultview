@@ -116,6 +116,22 @@ function clientToBoard(e, board) {
   return { x: e.clientX - rect.left, y: e.clientY - rect.top };
 }
 
+function getCanvasCursorMode(e, board, viewport, tool, elements, selectedIds) {
+  if (tool === 'hand') return 'grab';
+  if (tool === 'text') return 'text';
+  if (tool !== 'select') return 'crosshair';
+
+  const point = screenToWorld(e, board, viewport);
+  const selected = elements.find(el => selectedIds.includes(el.id));
+  const handle = selected ? getResizeHandle(point, selected) : null;
+  if (handle) return `${handle}-resize`;
+
+  const hit = [...elements].reverse().find(el => pointInElement(point, el));
+  if (!hit) return 'grab';
+  if (hit.type === 'text') return 'text';
+  return 'move';
+}
+
 export default function Canvas2D({ onClose }) {
   const [cards, setCards] = useState([]);
   const [elements, setElements] = useState([]);
@@ -127,6 +143,8 @@ export default function Canvas2D({ onClose }) {
   const [isPanning, setIsPanning] = useState(false);
   const [history, setHistory] = useState({ past: [], future: [] });
   const [editingText, setEditingText] = useState(null);
+  const [cursorMode, setCursorMode] = useState('grab');
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const boardRef = useRef(null);
   const vpRef = useRef(viewport);
@@ -139,6 +157,12 @@ export default function Canvas2D({ onClose }) {
   useEffect(() => { vpRef.current = viewport; }, [viewport]);
   useEffect(() => { elementsRef.current = elements; }, [elements]);
   useEffect(() => { selectedRef.current = selectedIds; }, [selectedIds]);
+
+  useEffect(() => {
+    const onFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+  }, []);
 
   const selectedElement = selectedIds.length === 1 ? elements.find(el => el.id === selectedIds[0]) : null;
 
@@ -334,6 +358,38 @@ export default function Canvas2D({ onClose }) {
     setSelectedIds([]);
   }
 
+  function newBlankCanvas() {
+    commitElements([]);
+    setCards([]);
+    setSelectedIds([]);
+    setActiveCard(null);
+    setEditingText(null);
+    setViewport({ x: 0, y: 0, scale: 1 });
+    setTool('select');
+  }
+
+  function minimizeWindow() {
+    window.electronAPI?.windowMinimize?.();
+  }
+
+  function toggleMaximize() {
+    if (window.electronAPI?.windowMaximize) {
+      window.electronAPI.windowMaximize();
+      return;
+    }
+    if (document.fullscreenElement) document.exitFullscreen?.();
+    else document.documentElement.requestFullscreen?.();
+  }
+
+  function toggleFullscreen() {
+    if (document.fullscreenElement) document.exitFullscreen?.();
+    else document.documentElement.requestFullscreen?.();
+  }
+
+  function closeApp() {
+    window.electronAPI?.windowClose?.();
+  }
+
   function exportPng() {
     const bounds = getSceneBounds(elements);
     const padding = 40;
@@ -344,7 +400,7 @@ export default function Canvas2D({ onClose }) {
     canvas.height = height * 2;
     const ctx = canvas.getContext('2d');
     ctx.scale(2, 2);
-    ctx.fillStyle = '#101010';
+    ctx.fillStyle = '#101216';
     ctx.fillRect(0, 0, width, height);
     ctx.translate(padding - bounds.x, padding - bounds.y);
     elements.forEach(el => drawCanvasElement(ctx, el));
@@ -355,18 +411,21 @@ export default function Canvas2D({ onClose }) {
     if (e.button !== 0 && e.button !== 1) return;
     const board = boardRef.current;
     if (!board) return;
-    const useHand = tool === 'hand' || e.button === 1 || isSpaceRef.current;
+    const world = screenToWorld(e, board, vpRef.current);
+    const selected = elementsRef.current.find(el => selectedRef.current.includes(el.id));
+    const handle = selected ? getResizeHandle(world, selected) : null;
+    const hit = [...elementsRef.current].reverse().find(el => pointInElement(world, el));
+    const useHand = tool === 'hand' || e.button === 1 || isSpaceRef.current || (tool === 'select' && !handle && !hit && !e.shiftKey);
+
     if (useHand) {
       e.preventDefault();
       setIsPanning(true);
+      setCursorMode('grabbing');
       actionRef.current = { type: 'pan', x: e.clientX - vpRef.current.x, y: e.clientY - vpRef.current.y };
       return;
     }
 
-    const world = screenToWorld(e, board, vpRef.current);
     if (tool === 'select') {
-      const selected = elementsRef.current.find(el => selectedRef.current.includes(el.id));
-      const handle = selected ? getResizeHandle(world, selected) : null;
       if (selected && handle) {
         actionRef.current = {
           type: 'resize',
@@ -378,7 +437,6 @@ export default function Canvas2D({ onClose }) {
         return;
       }
 
-      const hit = [...elementsRef.current].reverse().find(el => pointInElement(world, el));
       if (hit) {
         if (e.shiftKey) {
           setSelectedIds(prev => prev.includes(hit.id) ? prev.filter(id => id !== hit.id) : [...prev, hit.id]);
@@ -418,9 +476,14 @@ export default function Canvas2D({ onClose }) {
   const handleBoardMouseMove = useCallback((e) => {
     const action = actionRef.current;
     const board = boardRef.current;
-    if (!action || !board) return;
+    if (!board) return;
+    if (!action) {
+      setCursorMode(getCanvasCursorMode(e, board, vpRef.current, tool, elementsRef.current, selectedRef.current));
+      return;
+    }
     if (action.type === 'pan') {
       setViewport(prev => ({ ...prev, x: e.clientX - action.x, y: e.clientY - action.y }));
+      setCursorMode('grabbing');
       return;
     }
 
@@ -480,6 +543,7 @@ export default function Canvas2D({ onClose }) {
     }
     setIsPanning(false);
     actionRef.current = null;
+    if (tool === 'select' || tool === 'hand') setCursorMode('grab');
   }, [commitElements]);
 
   const handleDrop = useCallback((e) => {
@@ -489,8 +553,8 @@ export default function Canvas2D({ onClose }) {
     const vp = vpRef.current;
     Array.from(e.dataTransfer.files).forEach((file, i) => {
       if (!file.path) return;
-      const x = (e.clientX - rect.left - vp.x) / vp.scale + i * 30 - CARD_DEFAULT_W / 2;
-      const y = (e.clientY - rect.top - vp.y) / vp.scale + i * 30 - CARD_DEFAULT_H / 2;
+      const x = (e.clientX - rect.left - vp.x) / vp.scale + i * 24;
+      const y = (e.clientY - rect.top - vp.y) / vp.scale + i * 24;
       addCard(file.path, x, y);
     });
   }, []);
@@ -525,15 +589,25 @@ export default function Canvas2D({ onClose }) {
   }) : null;
 
   const cursorClass = useMemo(() => {
-    if (isPanning || tool === 'hand') return 'is-hand';
-    if (tool === 'select') return 'is-select';
+    if (isPanning) return 'is-grabbing';
+    if (tool === 'hand') return 'is-hand';
+    if (tool === 'select') return `is-${cursorMode}`;
     if (tool === 'text') return 'is-text';
     return 'is-crosshair';
-  }, [tool, isPanning]);
+  }, [tool, isPanning, cursorMode]);
 
   return (
     <div className="canvas2d-root">
       <div className="canvas2d-toolbar">
+        <div className="c2d-window-controls">
+          <button className="c2d-window-dot c2d-window-dot-exit" onClick={onClose} title="Exit canvas"/>
+          <button className="c2d-window-dot c2d-window-dot-min" onClick={minimizeWindow} title="Minimize"/>
+          <button className="c2d-window-dot c2d-window-dot-max" onClick={toggleMaximize} title="Maximize"/>
+          <button className="c2d-window-btn" onClick={toggleFullscreen} title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}>{isFullscreen ? '⤢' : '⛶'}</button>
+          <button className="c2d-window-btn c2d-window-btn-danger" onClick={closeApp} title="Close app">Close</button>
+        </div>
+        <button className="c2d-btn c2d-btn-primary" onClick={newBlankCanvas} title="New blank canvas">New</button>
+        <div className="c2d-divider"/>
         <SegmentedTools tool={tool} setTool={setTool} />
         <div className="c2d-divider"/>
         <StyleControls style={selectedElement || style} onChange={updateSelectedStyle} />
@@ -614,9 +688,9 @@ export default function Canvas2D({ onClose }) {
 
         {cards.length === 0 && elements.length === 0 && (
           <div className="canvas2d-empty">
-            <div className="canvas2d-empty-icon">+</div>
+            <button className="canvas2d-empty-icon" onClick={newBlankCanvas} title="New blank canvas">+</button>
             <p>Draw, type, connect ideas, or drop files onto the canvas.</p>
-            <p className="canvas2d-empty-sub">Space+drag pans · Ctrl+Scroll zooms · V/R/O/A/L/P/T switch tools</p>
+            <p className="canvas2d-empty-sub">Drag empty space to pan · Ctrl+Scroll zooms · V/R/O/A/L/P/T switch tools</p>
           </div>
         )}
       </div>
@@ -670,12 +744,12 @@ function Grid({ viewport }) {
       <defs>
         <pattern id="smallgrid" width={20 * viewport.scale} height={20 * viewport.scale}
           x={viewport.x % (20 * viewport.scale)} y={viewport.y % (20 * viewport.scale)} patternUnits="userSpaceOnUse">
-          <path d={`M ${20 * viewport.scale} 0 L 0 0 0 ${20 * viewport.scale}`} fill="none" stroke="#1e1e1e" strokeWidth="0.5"/>
+          <path d={`M ${20 * viewport.scale} 0 L 0 0 0 ${20 * viewport.scale}`} fill="none" stroke="#1e232b" strokeWidth="0.5"/>
         </pattern>
         <pattern id="biggrid" width={100 * viewport.scale} height={100 * viewport.scale}
           x={viewport.x % (100 * viewport.scale)} y={viewport.y % (100 * viewport.scale)} patternUnits="userSpaceOnUse">
           <rect width={100 * viewport.scale} height={100 * viewport.scale} fill="url(#smallgrid)"/>
-          <path d={`M ${100 * viewport.scale} 0 L 0 0 0 ${100 * viewport.scale}`} fill="none" stroke="#242424" strokeWidth="1"/>
+          <path d={`M ${100 * viewport.scale} 0 L 0 0 0 ${100 * viewport.scale}`} fill="none" stroke="#252b35" strokeWidth="1"/>
         </pattern>
       </defs>
       <rect width="100%" height="100%" fill="url(#biggrid)"/>
