@@ -1,0 +1,417 @@
+.canvas2d-root {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: #0a0a0a;
+  z-index: 1000;
+}
+
+.canvas2d-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 6px 12px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  -webkit-app-region: no-drag;
+  z-index: 20;
+  overflow-x: auto;
+}
+
+.c2d-btn,
+.c2d-tool,
+.c2d-file-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 30px;
+  gap: 6px;
+  padding: 0 10px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  white-space: nowrap;
+}
+
+.c2d-btn:hover,
+.c2d-tool:hover,
+.c2d-file-btn:hover {
+  background: var(--bg-active);
+  color: var(--text-primary);
+}
+
+.c2d-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.c2d-btn-close:hover {
+  background: var(--red);
+  border-color: transparent;
+  color: #fff;
+}
+
+.c2d-file-btn input {
+  display: none;
+}
+
+.c2d-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.c2d-tool-group {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-base);
+}
+
+.c2d-tool {
+  width: 30px;
+  min-width: 30px;
+  padding: 0;
+  font-size: 14px;
+  font-family: var(--font-mono);
+}
+
+.c2d-tool.active {
+  background: var(--accent);
+  color: #000;
+  border-color: transparent;
+}
+
+.c2d-style-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.c2d-swatches {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-base);
+}
+
+.c2d-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1px solid var(--border-bright);
+  position: relative;
+}
+
+.c2d-swatch.transparent {
+  background:
+    linear-gradient(45deg, transparent 46%, var(--red) 48%, var(--red) 52%, transparent 54%),
+    repeating-conic-gradient(#fff 0 25%, #ccc 0 50%) 50% / 8px 8px;
+}
+
+.c2d-style-controls input[type="range"] {
+  width: 72px;
+  accent-color: var(--accent);
+}
+
+.c2d-style-controls input[type="number"] {
+  width: 52px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 0 6px;
+}
+
+.c2d-zoom-label {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  min-width: 44px;
+  text-align: right;
+}
+
+.canvas2d-board {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #0b0b0b;
+  user-select: none;
+}
+
+.canvas2d-board.is-hand,
+.canvas2d-board.is-hand * {
+  cursor: grab;
+}
+
+.canvas2d-board.is-hand:active,
+.canvas2d-board.is-hand:active * {
+  cursor: grabbing;
+}
+
+.canvas2d-board.is-select {
+  cursor: default;
+}
+
+.canvas2d-board.is-crosshair {
+  cursor: crosshair;
+}
+
+.canvas2d-board.is-text {
+  cursor: text;
+}
+
+.canvas2d-grid {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.canvas2d-drawing-layer {
+  position: absolute;
+  inset: 0;
+  width: 100000px;
+  height: 100000px;
+  transform-origin: 0 0;
+  overflow: visible;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.canvas2d-world {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.c2d-element {
+  pointer-events: none;
+}
+
+.c2d-selection-box {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+  vector-effect: non-scaling-stroke;
+}
+
+.c2d-selection-handle {
+  fill: var(--accent);
+  stroke: #000;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.c2d-marquee {
+  fill: rgba(232, 197, 71, 0.12);
+  stroke: var(--accent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.c2d-text-editor {
+  position: absolute;
+  min-width: 180px;
+  min-height: 40px;
+  z-index: 30;
+  resize: both;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: rgba(10, 10, 10, 0.92);
+  color: var(--text-primary);
+  outline: none;
+  padding: 6px 8px;
+  font-family: var(--font-ui);
+  line-height: 1.35;
+}
+
+.canvas2d-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  pointer-events: none;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.canvas2d-empty-icon {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-bright);
+  border-radius: 50%;
+  font-size: 32px;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.canvas2d-empty p {
+  font-size: 14px;
+}
+
+.canvas2d-empty-sub {
+  font-size: 12px;
+  font-family: var(--font-mono);
+}
+
+.canvas-card {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45);
+  overflow: hidden;
+  min-width: 320px;
+  min-height: 48px;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.canvas-card-active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 12px 48px rgba(0,0,0,0.6);
+}
+
+.canvas-card-minimized {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+}
+
+.canvas-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 10px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+  cursor: grab;
+  flex-shrink: 0;
+}
+
+.canvas-card-header:active {
+  cursor: grabbing;
+}
+
+.canvas-card-icon {
+  min-width: 28px;
+  padding: 2px 4px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--accent);
+  text-align: center;
+}
+
+.canvas-card-title {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.canvas-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.canvas-card-btn {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.canvas-card-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.canvas-card-btn-close:hover {
+  background: var(--red);
+  color: #fff;
+}
+
+.canvas-card-body {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.canvas-card-body .viewer-wrapper {
+  height: 100%;
+}
+
+.canvas-card-body .viewer-scroll {
+  flex: 1;
+  overflow: auto;
+}
+
+.canvas-card-resize {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 18px;
+  height: 18px;
+  cursor: se-resize;
+  background: linear-gradient(135deg, transparent 52%, var(--border-bright) 53%);
+  opacity: 0.7;
+}
+
+.canvas-card-resize:hover {
+  opacity: 1;
+}
+
+[data-theme="light"] .canvas2d-root,
+[data-theme="light"] .canvas2d-board {
+  background: #e9e9e9;
+}
+
+[data-theme="light"] .canvas2d-grid path {
+  stroke: #d2d2d2;
+}

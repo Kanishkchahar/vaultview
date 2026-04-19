@@ -1,0 +1,191 @@
+.topbar {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  flex-shrink: 0;
+  z-index: 100;
+  user-select: none;
+  /* The whole bar is no-drag by default */
+  -webkit-app-region: no-drag;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  flex-shrink: 0;
+  -webkit-app-region: no-drag;
+}
+
+.sidebar-toggle {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  border-radius: var(--radius);
+  -webkit-app-region: no-drag;
+  cursor: pointer;
+}
+
+.sidebar-toggle:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+.app-brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.app-brand-icon {
+  font-size: 16px;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.app-brand-name {
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+}
+
+.open-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  transition: background 0.15s, border-color 0.15s;
+  -webkit-app-region: no-drag;
+  cursor: pointer;
+}
+
+.open-btn:hover {
+  background: var(--bg-active);
+  border-color: var(--border-bright);
+}
+
+/* Tabs — no-drag so clicks work */
+.tabs-container {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 100%;
+  gap: 1px;
+  padding: 0 4px;
+  /* This is the draggable region — but only the empty space between tabs */
+  -webkit-app-region: drag;
+}
+
+.tabs-container::-webkit-scrollbar { height: 3px; }
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  min-width: 120px;
+  max-width: 200px;
+  height: 100%;
+  background: transparent;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+  position: relative;
+  /* Each tab overrides drag so clicks register */
+  -webkit-app-region: no-drag;
+}
+
+.tab:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.tab-active {
+  color: var(--text-primary);
+  border-bottom-color: var(--accent);
+  background: var(--bg-elevated);
+}
+
+.tab-icon { font-size: 13px; flex-shrink: 0; }
+
+.tab-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tab-close {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.1s, background 0.1s;
+  -webkit-app-region: no-drag;
+  cursor: pointer;
+}
+
+.tab:hover .tab-close,
+.tab-active .tab-close { opacity: 1; }
+
+.tab-close:hover {
+  background: var(--bg-active);
+  color: var(--text-primary);
+}
+
+/* Window controls — must be no-drag */
+.window-controls {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  flex-shrink: 0;
+  -webkit-app-region: no-drag;
+}
+
+.wc-btn {
+  width: 46px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: background 0.1s, color 0.1s;
+  -webkit-app-region: no-drag;
+  cursor: pointer;
+}
+
+.wc-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.wc-close:hover { background: var(--red) !important; color: #fff !important; }
+
+/* Window control specific classes */
+.wc-min {}
+.wc-max {}
+.wc-close {}
+
+.open-btn-active {
+  background: var(--accent-glow);
+  border-color: var(--accent);
+  color: var(--accent);
+}
